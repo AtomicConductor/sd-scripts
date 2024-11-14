@@ -999,10 +999,6 @@ class NetworkTrainer:
                 args.max_train_steps > initial_step
             ), f"max_train_steps should be greater than initial step / max_train_stepsは初期ステップより大きい必要があります: {args.max_train_steps} vs {initial_step}"
 
-        progress_bar = tqdm(
-            range(args.max_train_steps - initial_step), smoothing=0, disable=not accelerator.is_local_main_process, desc="steps"
-        )
-
         epoch_to_start = 0
         if initial_step > 0:
             if args.skip_until_initial_step:
@@ -1244,7 +1240,6 @@ class NetworkTrainer:
 
                 # Checks if the accelerator has performed an optimization step behind the scenes
                 if accelerator.sync_gradients:
-                    progress_bar.update(1)
                     global_step += 1
 
                     optimizer_eval_fn()
@@ -1272,10 +1267,6 @@ class NetworkTrainer:
                 loss_recorder.add(epoch=epoch, step=step, loss=current_loss)
                 avr_loss: float = loss_recorder.moving_average
                 logs = {"avr_loss": avr_loss}  # , "lr": lr_scheduler.get_last_lr()[0]}
-                progress_bar.set_postfix(**logs)
-
-                if args.scale_weight_norms:
-                    progress_bar.set_postfix(**{**max_mean_logs, **logs})
 
                 if len(accelerator.trackers) > 0:
                     logs = self.generate_step_logs(
